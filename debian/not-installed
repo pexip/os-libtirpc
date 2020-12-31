@@ -1,0 +1,2 @@
+etc/bindresvport.blacklist
+usr/lib/*/libtirpc.la

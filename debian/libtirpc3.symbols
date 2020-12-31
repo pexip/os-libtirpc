@@ -1,0 +1,7 @@
+libtirpc.so.3 libtirpc3 #MINVER#
+* Build-Depends-Package: libtirpc-dev
+ (symver)TIRPC_0.3.0 1.0.2
+ (symver)TIRPC_0.3.1 1.0.2
+ (symver)TIRPC_0.3.2 1.0.2
+ (symver)TIRPC_0.3.3 1.0.2
+ (symver)TIRPC_PRIVATE 1.0.2

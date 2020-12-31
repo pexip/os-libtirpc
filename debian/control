@@ -1,0 +1,59 @@
+Source: libtirpc
+Priority: optional
+Maintainer: Josue Ortega <josue@debian.org>
+Build-Depends: debhelper-compat (= 13), libtool, pkg-config, libkrb5-dev
+Standards-Version: 4.5.1
+Section: libs
+Homepage: http://sourceforge.net/projects/libtirpc
+Vcs-Git: https://salsa.debian.org/debian/libtirpc.git
+Vcs-Browser: https://salsa.debian.org/debian/libtirpc
+Rules-Requires-Root: no
+
+Package: libtirpc-dev
+Section: libdevel
+Architecture: any
+Multi-Arch: same
+Depends: libtirpc3 (= ${binary:Version}), ${misc:Depends}
+Description: transport-independent RPC library - development files
+ This package contains a port of Sun's transport-independent RPC library to
+ Linux. The library is intended as a replacement for the RPC code in the GNU C
+ library, providing among others support for RPC (and in turn, NFS) over IPv6.
+ .
+ This package contains the files needed for development against libtirpc.
+
+Package: libtirpc3
+Architecture: any
+Multi-Arch: same
+Pre-Depends: ${misc:Pre-Depends}
+Depends: ${shlibs:Depends}, ${misc:Depends}, libtirpc-common (>= ${source:Version})
+Breaks: nfs-common (<< 1:1.2.8-7), nfs-kernel-server (<< 1:1.2.8-7)
+Description: transport-independent RPC library
+ This package contains a port of Sun's transport-independent RPC library to
+ Linux. The library is intended as a replacement for the RPC code in the GNU C
+ library, providing among others support for RPC (and in turn, NFS) over IPv6.
+
+Package: libtirpc-common
+Architecture: all
+Multi-Arch: foreign
+Depends: ${misc:Depends}
+Breaks: libtirpc1, libtirpc3 (<< 1.1.4-0.1~)
+Replaces: libtirpc1, libtirpc3 (<< 1.1.4-0.1~)
+Description: transport-independent RPC library - common files
+ This package contains a port of Sun's transport-independent RPC library to
+ Linux. The library is intended as a replacement for the RPC code in the GNU C
+ library, providing among others support for RPC (and in turn, NFS) over IPv6.
+ .
+ This package contains the netconfig configuration file as well as the
+ associated manpage.
+
+Package: libtirpc3-udeb
+Package-Type: udeb
+Architecture: any
+Section: debian-installer
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: transport-independent RPC library - udeb
+ This package contains a port of Sun's transport-independent RPC library to
+ Linux. The library is intended as a replacement for the RPC code in the GNU C
+ library, providing among others support for RPC (and in turn, NFS) over IPv6.
+ .
+ This is a cut-down library package for use in debian-installer.
