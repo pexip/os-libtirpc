@@ -1,6 +1,6 @@
-libtirpc (1.3.1-1pexip1) pexip; urgency=medium
+libtirpc (1.3.1-1pexip1) pexip-bullseye; urgency=medium
 
-  * Prepare Pexip packaging
+  * Prepare Pexip packaging for bullseye.
 
  -- Mark Hymers <mark.hymers@pexip.com>  Thu, 30 Jun 2022 14:24:55 +0100
 
