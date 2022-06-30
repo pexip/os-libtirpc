@@ -1,6 +1,7 @@
 Source: libtirpc
 Priority: optional
-Maintainer: Josue Ortega <josue@debian.org>
+Maintainer: Pexip AS <packaging@pexip.com>
+XSBC-Pexip-Original-Maintainer: Josue Ortega <josue@debian.org>
 Build-Depends: debhelper-compat (= 13), libtool, pkg-config, libkrb5-dev
 Standards-Version: 4.5.1
 Section: libs
@@ -8,6 +9,7 @@ Homepage: http://sourceforge.net/projects/libtirpc
 Vcs-Git: https://salsa.debian.org/debian/libtirpc.git
 Vcs-Browser: https://salsa.debian.org/debian/libtirpc
 Rules-Requires-Root: no
+XS-Pexip-Upstream: http://ftp.debian.org/debian/ bullseye
 
 Package: libtirpc-dev
 Section: libdevel
