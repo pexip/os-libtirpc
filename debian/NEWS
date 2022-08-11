@@ -1,0 +1,11 @@
+libtirpc (1.3.2-1) experimental; urgency=medium
+
+  In order to avoid potential collisions libtirpc now includes
+  the following ports in its denylist for bindresvport:
+    - 873  
+    - 992  
+    - 994
+  For more information check:
+    https://bugzilla.redhat.com/show_bug.cgi?id=1854147
+   
+ -- Josue Ortega <josue@debian.org>  Fri, 25 Jun 2021 14:37:34 -0600

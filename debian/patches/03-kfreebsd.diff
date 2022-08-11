@@ -39,7 +39,7 @@ Forwarded: not-needed
  }
 --- a/src/clnt_vc.c
 +++ b/src/clnt_vc.c
-@@ -72,10 +72,12 @@
+@@ -76,10 +76,12 @@
  #define MCALL_MSG_SIZE 24
  
  #define CMGROUP_MAX    16
@@ -53,7 +53,7 @@ Forwarded: not-needed
  /*
   * Credentials structure, used to verify the identity of a peer
   * process that has sent us a message. This is allocated by the
-@@ -91,6 +93,7 @@
+@@ -95,6 +97,7 @@
          short   cmcred_ngroups;         /* number or groups */
          gid_t   cmcred_groups[CMGROUP_MAX];     /* groups */
  };
