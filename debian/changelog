@@ -1,15 +1,42 @@
+libtirpc (1.3.3+ds-1) unstable; urgency=medium
+
+  * New upstream release (1.3.3):
+    + Refresh debian/patches.
+    + Remove Fix-DoS-vulnerability-in-libtirpc.patch. Patch is not longer needed
+      the changes have been applied by upstream.
+  * debian/copyright:
+    + Update debian/* copyright holder years.
+    + Document repack of upstream removing symlink
+      to /usr/share/automake-1.16/INSTALL file.
+  * Bump Standards-Version to 4.6.1. No changees required.
+
+ -- Josue Ortega <josue@debian.org>  Thu, 11 Aug 2022 08:50:52 -0600
+
+libtirpc (1.3.2-2.1) unstable; urgency=medium
+
+  * Non-maintainer upload.
+  * Fix DoS vulnerability in libtirpc (CVE-2021-46828) (Closes: #1015873)
+
+ -- Salvatore Bonaccorso <carnil@debian.org>  Mon, 01 Aug 2022 16:26:18 +0200
+
+libtirpc (1.3.2-2) unstable; urgency=medium
+
+  * Upload to unstable
+
+ -- Josue Ortega <josue@debian.org>  Tue, 17 Aug 2021 09:16:38 -0600
+
+libtirpc (1.3.2-1) experimental; urgency=medium
+
+  * New upstream release (1.3.2)
+  * Add NEWS file for current release
+
+ -- Josue Ortega <josue@debian.org>  Fri, 25 Jun 2021 18:16:29 -0600
+
 libtirpc (1.3.1-1+deb11u1pexip1) pexip; urgency=medium
 
   * New upstream release.
 
  -- Mark Hymers <mark.hymers@pexip.com>  Mon, 10 Oct 2022 16:20:38 +0100
-
-libtirpc (1.3.1-1+deb11u1) bullseye-security; urgency=high
-
-  * Non-maintainer upload by the Security Team.
-  * Fix DoS vulnerability in libtirpc (CVE-2021-46828) (Closes: #1015873)
-
- -- Salvatore Bonaccorso <carnil@debian.org>  Mon, 01 Aug 2022 16:26:18 +0200
 
 libtirpc (1.3.1-1pexip4) pexip-bullseye; urgency=medium
 
