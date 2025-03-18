@@ -1,1 +1,3 @@
 src/config.h
+debian/libtirpc3t64.preinst
+debian/libtirpc3t64.postrm
