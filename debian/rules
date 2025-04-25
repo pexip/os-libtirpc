@@ -3,7 +3,7 @@
 export DEB_BUILD_MAINT_OPTIONS = hardening=+all
 
 %:
-	dh $@ --with autoreconf
+	dh $@
 
 override_dh_auto_configure:
 	dh_auto_configure --builddir=build-deb
@@ -23,17 +23,15 @@ override_dh_auto_install:
 
 DEB_HOST_MULTIARCH ?= $(shell dpkg-architecture -qDEB_HOST_MULTIARCH)
 override_dh_install:
-	# Move libtirpc.so.* to /lib
-	mkdir -p debian/tmp/lib/$(DEB_HOST_MULTIARCH)
-	mv debian/tmp/usr/lib/*/libtirpc.so.* debian/tmp/lib/$(DEB_HOST_MULTIARCH)
-
-	# Fix up the -dev symlink
-	LINKTARGET=`readlink debian/tmp/usr/lib/$(DEB_HOST_MULTIARCH)/libtirpc.so`; \
-	ln -sf /lib/$(DEB_HOST_MULTIARCH)/$$LINKTARGET debian/tmp/usr/lib/$(DEB_HOST_MULTIARCH)/libtirpc.so
-
 	dh_install -Nlibtirpc3-udeb
 	dh_install -plibtirpc3-udeb --sourcedir=debian/tmp-udeb
 
 override_dh_auto_clean:
 	rm -rf build-deb build-udeb
 	rm -rf debian/tmp-udeb
+
+execute_before_dh_installdeb:
+	sed -e"s/#DEB_HOST_MULTIARCH#/$(DEB_HOST_MULTIARCH)/" \
+		debian/libtirpc3t64.preinst.in > debian/libtirpc3t64.preinst
+	sed -e"s/#DEB_HOST_MULTIARCH#/$(DEB_HOST_MULTIARCH)/" \
+		debian/libtirpc3t64.postrm.in > debian/libtirpc3t64.postrm

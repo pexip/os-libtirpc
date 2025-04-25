@@ -89,7 +89,7 @@ static struct address_cache *copy_of_cached(const char *, char *);
 static void delete_cache(struct netbuf *);
 static void add_cache(const char *, const char *, struct netbuf *, char *);
 static CLIENT *getclnthandle(const char *, const struct netconfig *, char **);
-static CLIENT *local_rpcb(void);
+static CLIENT *local_rpcb(char **targaddr);
 #ifdef NOTUSED
 static struct netbuf *got_entry(rpcb_entry_list_ptr, const struct netconfig *);
 #endif
@@ -104,17 +104,28 @@ destroy_addr(addr)
 {
 	if (addr == NULL)
 		return;
-	if(addr->ac_host != NULL)
+	if (addr->ac_host != NULL) {
 		free(addr->ac_host);
-	if(addr->ac_netid != NULL)
+		addr->ac_host = NULL;
+	}
+	if (addr->ac_netid != NULL) {
 		free(addr->ac_netid);
-	if(addr->ac_uaddr != NULL)
+		addr->ac_netid = NULL;
+	}
+	if (addr->ac_uaddr != NULL) {
 		free(addr->ac_uaddr);
-	if(addr->ac_taddr != NULL) {
-		if(addr->ac_taddr->buf != NULL)
+		addr->ac_uaddr = NULL;
+	}
+	if (addr->ac_taddr != NULL) {
+		if(addr->ac_taddr->buf != NULL) {
 			free(addr->ac_taddr->buf);
+			addr->ac_taddr->buf = NULL;
+		}
+		free(addr->ac_taddr);
+		addr->ac_taddr = NULL;
 	}
 	free(addr);
+	addr = NULL;
 }
 
 /*
@@ -252,12 +263,15 @@ delete_cache(addr)
 	for (cptr = front; cptr != NULL; cptr = cptr->ac_next) {
 		if (!memcmp(cptr->ac_taddr->buf, addr->buf, addr->len)) {
 			/* Unlink from cache. We'll destroy it after releasing the mutex. */
-			if (cptr->ac_uaddr)
+			if (cptr->ac_uaddr) {
 				free(cptr->ac_uaddr);
-			if (prevptr)
+				cptr->ac_uaddr = NULL;
+			}
+			if (prevptr) {
 				prevptr->ac_next = cptr->ac_next;
-			else
+			} else {
 				front = cptr->ac_next;
+			}
 			cachesize--;
 			break;
 		}
@@ -417,19 +431,12 @@ getclnthandle(host, nconf, targaddr)
 	    nconf->nc_netid, si.si_af, si.si_proto, si.si_socktype));
 
 	if (nconf->nc_protofmly != NULL && strcmp(nconf->nc_protofmly, NC_LOOPBACK) == 0) {
-		client = local_rpcb();
+		client = local_rpcb(targaddr);
 		if (! client) {
 			LIBTIRPC_DEBUG(1, ("getclnthandle: %s", 
 				clnt_spcreateerror("local_rpcb failed")));
 			goto out_err;
 		} else {
-			struct sockaddr_un sun;
-
-			if (targaddr) {
-				*targaddr = malloc(sizeof(sun.sun_path));
-				strncpy(*targaddr, _PATH_RPCBINDSOCK,
-				    sizeof(sun.sun_path));
-			}
 			return (client);
 		}
 	} else {
@@ -479,6 +486,8 @@ getclnthandle(host, nconf, targaddr)
 	if (res)
 		freeaddrinfo(res);
 out_err:
+	if (client && targaddr &&!*targaddr)
+		fprintf(stderr, "No targaddr provided\n");
 	if (!client && targaddr)
 		free(*targaddr);
 	return (client);
@@ -496,11 +505,7 @@ getpmaphandle(nconf, hostname, tgtaddr)
 	CLIENT *client = NULL;
 	rpcvers_t pmapvers = 2;
 
-	/*
-	 * Try UDP only - there are some portmappers out
-	 * there that use UDP only.
-	 */
-	if (nconf == NULL || strcmp(nconf->nc_proto, NC_TCP) == 0) {
+	if (nconf == NULL) {
 		struct netconfig *newnconf;
 
 		if ((newnconf = getnetconfigent("udp")) == NULL) {
@@ -509,7 +514,8 @@ getpmaphandle(nconf, hostname, tgtaddr)
 		}
 		client = getclnthandle(hostname, newnconf, tgtaddr);
 		freenetconfigent(newnconf);
-	} else if (strcmp(nconf->nc_proto, NC_UDP) == 0) {
+	} else if (strcmp(nconf->nc_proto, NC_UDP) == 0 ||
+	    strcmp(nconf->nc_proto, NC_TCP) == 0) {
 		if (strcmp(nconf->nc_protofmly, NC_INET) != 0)
 			return NULL;
 		client = getclnthandle(hostname, nconf, tgtaddr);
@@ -531,7 +537,8 @@ getpmaphandle(nconf, hostname, tgtaddr)
  * rpcbind. Returns NULL on error and free's everything.
  */
 static CLIENT *
-local_rpcb()
+local_rpcb(targaddr)
+	char **targaddr;
 {
 	CLIENT *client;
 	static struct netconfig *loopnconf;
@@ -541,34 +548,50 @@ local_rpcb()
 	size_t tsize;
 	struct netbuf nbuf;
 	struct sockaddr_un sun;
+	int i;
 
 	/*
 	 * Try connecting to the local rpcbind through a local socket
-	 * first. If this doesn't work, try all transports defined in
-	 * the netconfig file.
+	 * first - trying both addresses. If this doesn't work, try all
+	 * non-local transports defined in the netconfig file.
 	 */
-	memset(&sun, 0, sizeof sun);
-	sock = socket(AF_LOCAL, SOCK_STREAM, 0);
-	if (sock < 0)
-		goto try_nconf;
-	sun.sun_family = AF_LOCAL;
-	strcpy(sun.sun_path, _PATH_RPCBINDSOCK);
-	nbuf.len = SUN_LEN(&sun);
-	nbuf.maxlen = sizeof (struct sockaddr_un);
-	nbuf.buf = &sun;
+	for (i = 0; i < 2; i++) {
+		memset(&sun, 0, sizeof sun);
+		sock = socket(AF_LOCAL, SOCK_STREAM, 0);
+		if (sock < 0)
+			goto try_nconf;
+		sun.sun_family = AF_LOCAL;
+		switch (i) {
+		case 0:
+			memcpy(sun.sun_path, _PATH_RPCBINDSOCK_ABSTRACT,
+			       sizeof(_PATH_RPCBINDSOCK_ABSTRACT));
+			break;
+		case 1:
+			strcpy(sun.sun_path, _PATH_RPCBINDSOCK);
+			break;
+		}
+		nbuf.len = SUN_LEN_A(&sun);
+		nbuf.maxlen = sizeof (struct sockaddr_un);
+		nbuf.buf = &sun;
 
-	tsize = __rpc_get_t_size(AF_LOCAL, 0, 0);
-	client = clnt_vc_create(sock, &nbuf, (rpcprog_t)RPCBPROG,
-	    (rpcvers_t)RPCBVERS, tsize, tsize);
+		tsize = __rpc_get_t_size(AF_LOCAL, 0, 0);
+		client = clnt_vc_create(sock, &nbuf, (rpcprog_t)RPCBPROG,
+					(rpcvers_t)RPCBVERS, tsize, tsize);
 
-	if (client != NULL) {
-		/* Mark the socket to be closed in destructor */
-		(void) CLNT_CONTROL(client, CLSET_FD_CLOSE, NULL);
-		return client;
+		if (client != NULL) {
+			/* Mark the socket to be closed in destructor */
+			(void) CLNT_CONTROL(client, CLSET_FD_CLOSE, NULL);
+			if (targaddr) {
+				if (sun.sun_path[0] == 0)
+					sun.sun_path[0] = '@';
+				*targaddr = strdup(sun.sun_path);
+			}
+			return client;
+		}
+
+		/* Nobody needs this socket anymore; free the descriptor. */
+		close(sock);
 	}
-
-	/* Nobody needs this socket anymore; free the descriptor. */
-	close(sock);
 
 try_nconf:
 
@@ -622,7 +645,7 @@ try_nconf:
 		endnetconfig(nc_handle);
 	}
 	mutex_unlock(&loopnconf_lock);
-	client = getclnthandle(hostname, loopnconf, NULL);
+	client = getclnthandle(hostname, loopnconf, targaddr);
 	return (client);
 }
 
@@ -651,7 +674,7 @@ rpcb_set(program, version, nconf, address)
 		rpc_createerr.cf_stat = RPC_UNKNOWNADDR;
 		return (FALSE);
 	}
-	client = local_rpcb();
+	client = local_rpcb(NULL);
 	if (! client) {
 		return (FALSE);
 	}
@@ -702,7 +725,7 @@ rpcb_unset(program, version, nconf)
 	RPCB parms;
 	char uidbuf[32];
 
-	client = local_rpcb();
+	client = local_rpcb(NULL);
 	if (! client) {
 		return (FALSE);
 	}
@@ -758,7 +781,7 @@ got_entry(relp, nconf)
 
 /*
  * Quick check to see if rpcbind is up.  Tries to connect over
- * local transport.
+ * local transport - first abstract, then regular.
  */
 bool_t
 __rpcbind_is_up()
@@ -785,15 +808,22 @@ __rpcbind_is_up()
 	if (sock < 0)
 		return (FALSE);
 	sun.sun_family = AF_LOCAL;
-	strncpy(sun.sun_path, _PATH_RPCBINDSOCK, sizeof(sun.sun_path));
 
-	if (connect(sock, (struct sockaddr *)&sun, sizeof(sun)) < 0) {
+	memcpy(sun.sun_path, _PATH_RPCBINDSOCK_ABSTRACT,
+	       sizeof(_PATH_RPCBINDSOCK_ABSTRACT));
+	if (connect(sock, (struct sockaddr *)&sun, SUN_LEN_A(&sun)) == 0) {
 		close(sock);
-		return (FALSE);
+		return (TRUE);
+	}
+
+	strncpy(sun.sun_path, _PATH_RPCBINDSOCK, sizeof(sun.sun_path));
+	if (connect(sock, (struct sockaddr *)&sun, sizeof(sun)) == 0) {
+		close(sock);
+		return (TRUE);
 	}
 
 	close(sock);
-	return (TRUE);
+	return (FALSE);
 }
 #endif
 
@@ -1332,7 +1362,7 @@ rpcb_taddr2uaddr(nconf, taddr)
 		rpc_createerr.cf_stat = RPC_UNKNOWNADDR;
 		return (NULL);
 	}
-	client = local_rpcb();
+	client = local_rpcb(NULL);
 	if (! client) {
 		return (NULL);
 	}
@@ -1366,7 +1396,7 @@ rpcb_uaddr2taddr(nconf, uaddr)
 		rpc_createerr.cf_stat = RPC_UNKNOWNADDR;
 		return (NULL);
 	}
-	client = local_rpcb();
+	client = local_rpcb(NULL);
 	if (! client) {
 		return (NULL);
 	}

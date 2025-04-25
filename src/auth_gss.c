@@ -842,9 +842,9 @@ rpc_gss_seccreate(CLIENT *clnt, char *principal, char *mechanism,
 	gd->sec = sec;
 
 	if (req) {
-		sec.req_flags = req->req_flags;
+		gd->sec.req_flags = req->req_flags;
 		gd->time_req = req->time_req;
-		sec.cred = req->my_cred;
+		gd->sec.cred = req->my_cred;
 		gd->icb = req->input_channel_bindings;
 	}
 
